@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>For You</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background-color: #ffcccc; 
+
+            /* --- BACKGROUND IMAGE SECTION --- */
+            /* 1. We start with a working internet link so you see it works immediately. */
+            background-image: url('https://images.unsplash.com/photo-1518199266791-5375a83190b7');
+            
+            /* 2. To use your own file (e.g., photo.jpg), DELETE the line above 
+                  and UNCOMMENT the line below by removing the slash-stars */
+            
+            /* background-image: url('photo.jpg'); */
+
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Dark overlay to ensure text/envelope is visible */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.3); 
+            z-index: 0;
+        }
+
+        /* --- SCALING CONTAINER (Fixes Mobile Size) --- */
+        /* This shrinks the 300px envelope to fit small screens without breaking geometry */
+        .scale-container {
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s;
+        }
+
+        /* If screen is smaller than 350px, shrink to 80% size */
+        @media (max-width: 350px) {
+            .scale-container {
+                transform: scale(0.8);
+            }
+        }
+
+        /* --- ENVELOPE GEOMETRY --- */
+        .envelope-wrapper {
+            position: relative;
+            cursor: pointer;
+            width: 300px;  /* FIXED WIDTH */
+            height: 300px; /* FIXED HEIGHT */
+            transition: transform 0.3s;
+        }
+
+        .envelope-wrapper:hover {
+            transform: scale(1.05);
+        }
+
+        .envelope {
+            position: relative;
+            width: 300px;
+            height: 200px;
+            background-color: #f08080; /* Base color */
+            border-radius: 0 0 5px 5px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        /* The Triangle Flap (Top) */
+        .flap {
+            position: absolute;
+            top: 0; left: 0;
+            width: 0; height: 0; /* IMPORTANT: Must be 0 */
+            border-left: 150px solid transparent;
+            border-right: 150px solid transparent;
+            border-top: 110px solid #f5dedc; /* The flap color */
+            transform-origin: top;
+            transition: transform 0.6s ease-in-out, z-index 0.6s;
+            z-index: 5;
+        }
+
+        /* Left Pocket Triangle */
+        .pocket-left {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 100px 0 100px 150px;
+            border-color: transparent transparent transparent #faf0f2;
+            z-index: 4;
+        }
+
+        /* Right Pocket Triangle */
+        .pocket-right {
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 0 0 200px 300px;
+            border-color: transparent transparent #faf0f2 transparent;
+            z-index: 4;
+        }
+
+        /* Bottom Filler (covers the gap at the bottom) */
+        .pocket-bottom {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 0; height: 0;
+            border-left: 150px solid transparent;
+            border-right: 150px solid transparent;
+            border-bottom: 100px solid #faf0f2;
+            z-index: 3;
+        }
+
+        .seal {
+            position: absolute;
+            top: 85px; left: 50%;
+            transform: translateX(-50%);
+            font-size: 40px;
+            z-index: 6;
+            transition: opacity 0.4s;
+            pointer-events: none;
+        }
+
+        /* --- THE CARD --- */
+        .card {
+            position: absolute;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 270px;
+            height: 170px;
+            background-color: #f7dae1;
+            border-radius: 5px;
+            text-align: center;
+            padding: 20px 10px;
+            box-sizing: border-box;
+            transition: transform 0.8s ease-in-out 0.4s;
+            z-index: 2; /* Starts inside envelope */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card h1 {
+            color: #1c0208;
+            font-size: 1.4rem;
+            margin: 0 0 20px 0;
+        }
+
+        /* --- ANIMATION LOGIC --- */
+        .envelope-wrapper.open .flap {
+            transform: rotateX(180deg);
+            z-index: 1; /* Moves behind card */
+        }
+
+        .envelope-wrapper.open .seal {
+            opacity: 0;
+        }
+
+        .envelope-wrapper.open .card {
+            transform: translateX(-50%) translateY(-150px);
+            z-index: 10; /* Comes to front */
+        }
+
+        /* --- BUTTONS --- */
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            font-size: 1rem;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #yesBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        /* Broken Button Wiggle Animation */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        .shake { animation: shake 0.3s; }
+
+        #noBtn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .converted {
+            background-color: #4CAF50 !important;
+            color: white !important;
+        }
+
+        #success-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 230, 230, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        #success-message {
+            color: #d32f2f;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" loop>
+        <source src="song.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="overlay"></div>
+
+    <div class="scale-container">
+        <div class="envelope-wrapper" onclick="openEnvelope()">
+            <div class="envelope">
+                
+                <div class="card">
+                    <h1 id="question">Will you be my Valentine?</h1>
+                    <div class="btn-group">
+                        <button id="yesBtn" onclick="handleDecoy(event)">Yes</button>
+                        <button id="noBtn" 
+                                onmouseover="convertButton()" 
+                                ontouchstart="convertButton()" 
+                                onmouseout="revertButton()" 
+                                ontouchend="revertButton()"
+                                onclick="acceptProposal(event)">No</button>
+                    </div>
+                </div>
+
+                <div class="pocket-left"></div>
+                <div class="pocket-right"></div>
+                <div class="pocket-bottom"></div>
+                
+                <div class="flap"></div>
+                <div class="seal">❤️</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="success-overlay">
+        <div id="success-message">Thank you Jag! Happy Valentine's Day! ❤️</div>
+    </div>
+
+    <script>
+        let isOpen = false;
+        const envelope = document.querySelector('.envelope-wrapper');
+        const noBtn = document.getElementById('noBtn');
+        const yesBtn = document.getElementById('yesBtn');
+        const successOverlay = document.getElementById('success-overlay');
+        const audio = document.getElementById('bgMusic');
+
+        function openEnvelope() {
+            if (!isOpen) {
+                envelope.classList.add('open');
+                isOpen = true;
+                
+                audio.play().catch(error => {
+                    console.log("Audio play failed:", error);
+                });
+
+                setTimeout(() => {
+                    envelope.style.cursor = 'default';
+                }, 800);
+            }
+        }
+
+        function handleDecoy(event) {
+            if(event) event.stopPropagation();
+            if (!isOpen) return;
+            yesBtn.classList.add('shake');
+            setTimeout(() => {
+                yesBtn.classList.remove('shake');
+            }, 300);
+        }
+
+        function convertButton() {
+            if (!isOpen) return;
+            noBtn.innerText = "Yes";
+            noBtn.classList.add("converted");
+            noBtn.style.transform = "scale(1.1)";
+        }
+
+        function revertButton() {
+            if (!isOpen) return;
+            setTimeout(() => {
+                noBtn.innerText = "No";
+                noBtn.classList.remove("converted");
+                noBtn.style.transform = "scale(1)";
+            }, 100);
+        }
+
+        function acceptProposal(event) {
+            if(event) event.stopPropagation();
+            successOverlay.style.display = 'flex';
+            createHearts();
+        }
+
+        function createHearts() {
+            setInterval(() => {
+                const heart = document.createElement('div');
+                heart.innerHTML = '❤️';
+                heart.style.position = 'fixed';
+                heart.style.left = Math.random() * 100 + 'vw';
+                heart.style.top = '-10px';
+                heart.style.fontSize = Math.random() * 20 + 20 + 'px';
+                heart.style.zIndex = '101';
+                heart.style.animation = 'fall 3s linear';
+                document.body.appendChild(heart);
+                setTimeout(() => { heart.remove(); }, 3000);
+            }, 100);
+        }
+
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `
+            @keyframes fall {
+                to { transform: translateY(100vh); }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    </script>
+</body>
+</html>
